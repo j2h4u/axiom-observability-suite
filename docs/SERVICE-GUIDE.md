@@ -1,4 +1,6 @@
-# Интеграция и логирование: как сервис попадает в Axiom
+[← README](../README.md)
+
+# Подключение сервиса к мониторингу
 
 Кому читать: разработчикам сервисов и тем, кто настраивает логирование/healthcheck.
 
@@ -117,60 +119,20 @@ python3 /opt/axiom-observability-suite/axiom_cli.py monitors create <имя_ко
 
 ---
 
-## Vector: настройка и управление
+## Vector: ключевые моменты
 
-Расположение на сервере: `/opt/axiom-observability-suite/`
+Конфигурация: [`vector.toml`](../vector.toml) и [`docker-compose.yml`](../docker-compose.yml) в корне проекта.
 
-**vector.toml:**
-```toml
-[sources.docker]
-type = "docker_logs"
-exclude_containers = ["axiom-log-shipper"]
-
-[transforms.enrich]
-type = "remap"
-inputs = ["docker"]
-source = '''
-.host = "${HOSTNAME}"       # имя сервера
-.service = .container_name  # имя контейнера
-.source = "docker"
-'''
-
-[sinks.axiom]
-type = "axiom"              # нативный sink (Vector 0.34+)
-inputs = ["enrich"]
-token = "${AXIOM_TOKEN}"
-dataset = "${AXIOM_DATASET}"
-```
-
-**docker-compose.yml:**
-```yaml
-services:
-  axiom-log-shipper:
-    image: timberio/vector:0.36.0-alpine
-    container_name: axiom-log-shipper
-    restart: unless-stopped
-    env_file: .env
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./vector.toml:/etc/vector/vector.toml:ro
-    command: ["--config", "/etc/vector/vector.toml"]  # без этого грузит дефолтный конфиг!
-```
-
-**Управление:**
-```bash
-docker ps | grep axiom-log-shipper
-docker logs axiom-log-shipper --tail 50
-docker restart axiom-log-shipper                                      # новый vector.toml
-docker compose -f /opt/axiom-observability-suite/docker-compose.yml up -d    # новый .env
-```
-
-**Добавить новый сервер:** скопировать `/opt/axiom-observability-suite/` на новый сервер,
-заполнить `.env` (без `COMPOSE_PROFILES`), запустить `docker compose up -d`.
+Как устроен pipeline:
+- **Source**: `docker_logs` — читает stdout всех контейнеров (кроме самого `axiom-log-shipper`)
+- **Transform**: обогащает каждое событие полями `host` (из `$HOSTNAME`) и `service` (имя контейнера)
+- **Sink**: нативный `axiom` sink (Vector 0.34+) — отправляет в датасет из `$AXIOM_DATASET`
 
 **Подводные камни:**
-- Без `command: ["--config", ...]` Vector игнорирует `vector.toml` и грузит дефолтный `vector.yaml`
+- Без `command: ["--config", ...]` в docker-compose.yml Vector игнорирует `vector.toml` и грузит дефолтный `vector.yaml`
 - `type = "http"` вместо `type = "axiom"` требует заголовок `Content-Type: application/x-ndjson`, иначе 415
+
+**Добавить новый сервер:** см. [GETTING-STARTED.md](GETTING-STARTED.md) → "Перенос на другой сервер".
 
 ---
 

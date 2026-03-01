@@ -3,6 +3,9 @@
 Готовый стек мониторинга для Docker-серверов. Ставится за минуту, работает незаметно,
 пишет в Telegram когда что-то идёт не так.
 
+Логи хранятся в [Axiom](https://axiom.co) — облачная платформа для хранения и анализа логов
+(бесплатный план включён).
+
 ## Как устроен
 
 Пакет делает две независимые вещи. Можно использовать обе или только первую.
@@ -56,6 +59,12 @@ Alertbot превращает его в понятное Telegram-сообщен
 health-watcher доставит алерт напрямую в Telegram, минуя сломанный компонент.
 Петли и амплификация исключены архитектурно — подробности в [docs/ALERTING.md](docs/ALERTING.md).
 
+## Что нужно
+
+- Docker Engine 20+ и docker compose v2
+- Аккаунт [Axiom](https://axiom.co) (бесплатный план достаточен)
+- Для alertbot: Telegram-бот, домен с HTTPS
+
 ## Быстрый старт
 
 ```bash
@@ -64,9 +73,10 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Логи всех контейнеров пойдут в Axiom, Docker health events — под наблюдением.
+Через минуту проверь, что логи дошли: в Axiom открой датасет → Stream.
+Должны появиться события. Если пусто — `docker logs axiom-log-shipper --tail 20`.
 
-### С axiom-to-telegram-bot (на одном сервере)
+### С alertbot (на одном сервере)
 
 ```bash
 # Дополнительно в .env:
@@ -80,8 +90,8 @@ docker compose --profile alertbot up -d
 
 ## Документация
 
-- [docs/SETUP.md](docs/SETUP.md) — сценарии установки и подключения
-- [docs/INTEGRATION.md](docs/INTEGRATION.md) — интеграция сервиса, healthcheck, логирование, Vector
+- [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md) — сценарии подключения, перенос на другой сервер
+- [docs/SERVICE-GUIDE.md](docs/SERVICE-GUIDE.md) — чеклист для сервиса: healthcheck, логирование, Vector
 - [docs/AXIOM.md](docs/AXIOM.md) — APL-запросы, мониторы, CLI (`axiom_cli.py`), MCP
 - [docs/ALERTING.md](docs/ALERTING.md) — alertbot, маршрутизация, self-monitoring, лучшие практики алертов
 

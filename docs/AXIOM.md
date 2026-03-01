@@ -1,24 +1,12 @@
+[← README](../README.md)
+
 # Axiom: запросы, мониторы, CLI
 
-Датасет: `prod-docker-logs`. Поля в каждом событии: `host`, `service`, `message`, `_time`.
+Кому читать: DevOps и операторам стека.
 
----
-
-## Подключение MCP (для AI-клиентов)
-
-Axiom поддерживает MCP через OAuth — работает в Claude Code, Cursor и других клиентах.
-
-1. Добавь remote MCP server: `https://mcp.axiom.co/mcp`
-2. Авторизуйся в браузере через Axiom
-
-Если OAuth не работает (headless-сервер), используй PAT:
-```
-Authorization: Bearer <PAT>
-x-axiom-org-id: <ORG_ID>
-```
-
-MCP поддерживает: `queryApl`, `listDatasets`, `getDatasetSchema`, `getMonitors`, `getMonitorsHistory`.
-Создавать и редактировать мониторы через MCP нельзя — используй `axiom_cli.py`.
+Датасет: `prod-docker-logs`. Это имя захардкожено в `axiom_cli.py` — мониторы
+создаются именно для этого датасета. Если нужен другой — поменять константу `DATASET`
+в скрипте. Поля в каждом событии: `host`, `service`, `message`, `_time`.
 
 ---
 
@@ -68,9 +56,13 @@ python3 axiom_cli.py <команда>
 python3 axiom_cli.py monitors list
 python3 axiom_cli.py monitors create <service>                          # порог: 1 ошибка / 5 мин
 python3 axiom_cli.py monitors create <service> --interval 10 --threshold 3
+python3 axiom_cli.py monitors create-health-watcher                     # монитор для unhealthy-контейнеров
 python3 axiom_cli.py monitors attach-notifiers
 python3 axiom_cli.py monitors delete <id>
 ```
+
+`create-health-watcher` создаёт Threshold-монитор, который алертит если health-watcher
+зафиксировал unhealthy-контейнер. Нужен один раз на инсталляцию.
 
 **Нотификаторы:**
 ```bash
@@ -79,7 +71,7 @@ python3 axiom_cli.py notifiers create <name> <webhook-url>
 python3 axiom_cli.py notifiers delete <id>
 ```
 
-См. `docs/ALERTING.md` (раздел "Лучшие практики по алертам Axiom") — формат вебхука и рекомендации по содержанию алертов.
+См. [ALERTING.md](ALERTING.md) (раздел "Лучшие практики по алертам Axiom") — формат вебхука и рекомендации по содержанию алертов.
 
 **Обязательная привязка notifier:** Axiom позволяет создать монитор без notifier —
 в таком случае алерты не уходят. Регламент: создавать мониторы через
@@ -115,3 +107,21 @@ python3 axiom_cli.py notifiers list
 python3 axiom_cli.py monitors attach-notifiers
 python3 axiom_cli.py monitors list
 ```
+
+---
+
+## Подключение MCP (для AI-клиентов)
+
+Axiom поддерживает MCP через OAuth — работает в Claude Code, Cursor и других клиентах.
+
+1. Добавь remote MCP server: `https://mcp.axiom.co/mcp`
+2. Авторизуйся в браузере через Axiom
+
+Если OAuth не работает (headless-сервер), используй PAT:
+```
+Authorization: Bearer <PAT>
+x-axiom-org-id: <ORG_ID>
+```
+
+MCP поддерживает: `queryApl`, `listDatasets`, `getDatasetSchema`, `getMonitors`, `getMonitorsHistory`.
+Создавать и редактировать мониторы через MCP нельзя — используй `axiom_cli.py`.

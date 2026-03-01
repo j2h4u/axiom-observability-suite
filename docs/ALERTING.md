@@ -1,3 +1,5 @@
+[← README](../README.md)
+
 # Alerting: Axiom → Telegram
 
 Кому читать: тем, кто настраивает алерты, Telegram и маршрутизацию по топикам.
@@ -139,7 +141,7 @@ docker ps | grep axiom-to-telegram-bot
 # Логи
 docker logs axiom-to-telegram-bot --tail 30
 
-# Пересоздать контейнер (подхватывает новый routes.yml)
+# Применить новый routes.yml (не перечитывается на лету — нужен рестарт)
 docker compose -f /opt/axiom-observability-suite/docker-compose.yml --profile alertbot up -d
 
 # Пересобрать образ (после изменений app.py)
@@ -320,29 +322,3 @@ Match:
 - https://sre.google/sre-book/monitoring-distributed-systems/
 - https://sre.google/sre-book/practical-alerting/
 
----
-
-## Перенос на другой сервер
-
-1. Скопировать `/opt/axiom-observability-suite/` на новый сервер.
-2. Скопировать `.env` (убедиться что `COMPOSE_PROFILES=alertbot` раскомментирован).
-3. Скопировать `routes.yml`.
-4. Настроить reverse proxy (axiom-to-telegram-bot слушает на `127.0.0.1:8092`):
-   - **nginx** (если уже установлен):
-     ```nginx
-     location /alertbot/ {
-         proxy_pass http://127.0.0.1:8092/;
-         proxy_set_header Host $host;
-     }
-     ```
-     ```bash
-     certbot --nginx -d <domain>
-     ```
-   - **Caddy** (если nginx нет — проще, TLS из коробки):
-     ```
-     <domain> {
-         reverse_proxy /alertbot/* localhost:8092
-     }
-     ```
-5. `docker compose --profile alertbot up -d --build`
-6. Обновить URL вебхука в Axiom Notifier на новый домен.
